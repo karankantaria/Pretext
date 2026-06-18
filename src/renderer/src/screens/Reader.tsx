@@ -8,25 +8,27 @@ import { useReader } from '../reader/useReader'
 import { getSkin } from '../skins'
 
 export default function Reader(): React.JSX.Element {
-  const { bookId, skinId, goLibrary } = useApp()
+  const { bookId, skinId, goLibrary, panic } = useApp()
   const reader = useReader(bookId ?? '')
   const skin = getSkin(skinId)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
+      if (panic) return // page-turns shouldn't fire under the panic cover
       if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
         e.preventDefault()
         reader.next()
       } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
         e.preventDefault()
         reader.prev()
-      } else if (e.key === 'Escape') {
+      } else if (e.key === 'Backspace') {
+        e.preventDefault()
         goLibrary()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [reader, goLibrary])
+  }, [reader, goLibrary, panic])
 
   if (!bookId) {
     return <div className="flex h-full items-center justify-center text-[#5c6370]">No book</div>
@@ -67,6 +69,18 @@ export default function Reader(): React.JSX.Element {
       {/* Invisible click zones: left third = prev, right two-thirds = next. */}
       <div className="absolute inset-y-0 left-0 w-1/3 cursor-default" onClick={reader.prev} />
       <div className="absolute inset-y-0 right-0 w-2/3 cursor-default" onClick={reader.next} />
+
+      {/* Discreet exit: a faint back button revealed only on hover (top-left). */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          goLibrary()
+        }}
+        title="Back to library (Backspace)"
+        className="absolute left-2 top-2 z-20 grid h-7 w-7 place-items-center rounded-md bg-black/30 text-sm text-white/80 opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/50 hover:opacity-100"
+      >
+        ←
+      </button>
     </div>
   )
 }

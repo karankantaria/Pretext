@@ -23,6 +23,8 @@ export interface SkinProps {
 export interface SkinDef {
   id: string
   name: string
+  /** Category id (see CATEGORIES) used to group the wardrobe by profession. */
+  category: string
   /** One-line pitch shown in the camouflage gallery. */
   tagline: string
   /** What an onlooker reads it as. */

@@ -17,6 +17,11 @@ const api: PretextApi = {
   },
   progress: {
     save: (id, position) => ipcRenderer.invoke(IPC.progressSave, id, position)
+  },
+  onPanic: (cb) => {
+    const handler = (): void => cb()
+    ipcRenderer.on(IPC.panicTrigger, handler)
+    return () => ipcRenderer.removeListener(IPC.panicTrigger, handler)
   }
 }
 

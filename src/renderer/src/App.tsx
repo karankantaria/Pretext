@@ -1,11 +1,30 @@
+import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AppProvider, useApp } from './store/appStore'
 import Library from './screens/Library'
 import Camouflage from './screens/Camouflage'
 import Reader from './screens/Reader'
+import PanicScreen from './screens/PanicScreen'
 
 function Router(): React.JSX.Element {
-  const { screen } = useApp()
+  const { screen, panic, togglePanic } = useApp()
+
+  // Escape (focused) toggles panic; the global F9 hotkey routes here too.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        togglePanic()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    const off = window.api.onPanic(togglePanic)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      off()
+    }
+  }, [togglePanic])
+
   return (
     <div className="h-full w-full overflow-hidden">
       <AnimatePresence mode="wait">
@@ -22,6 +41,7 @@ function Router(): React.JSX.Element {
           {screen === 'reader' && <Reader />}
         </motion.div>
       </AnimatePresence>
+      {panic && <PanicScreen />}
     </div>
   )
 }

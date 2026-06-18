@@ -9,6 +9,8 @@ interface AppState {
   screen: Screen
   bookId: string | null
   skinId: string
+  /** When true, the innocuous panic cover is shown over everything. */
+  panic: boolean
   /** Library → Camouflage: a book was chosen. */
   pickBook: (id: string) => void
   /** Camouflage → Reader: a skin was chosen. */
@@ -17,6 +19,8 @@ interface AppState {
   goLibrary: () => void
   /** Reader/Camouflage → Library home. */
   goCamouflage: () => void
+  togglePanic: () => void
+  setPanic: (on: boolean) => void
 }
 
 const Ctx = createContext<AppState | null>(null)
@@ -25,12 +29,14 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
   const [screen, setScreen] = useState<Screen>('library')
   const [bookId, setBookId] = useState<string | null>(null)
   const [skinId, setSkinId] = useState<string>('code')
+  const [panic, setPanicState] = useState(false)
 
   const value = useMemo<AppState>(
     () => ({
       screen,
       bookId,
       skinId,
+      panic,
       pickBook: (id) => {
         setBookId(id)
         setScreen('camouflage')
@@ -40,9 +46,11 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
         setScreen('reader')
       },
       goLibrary: () => setScreen('library'),
-      goCamouflage: () => setScreen('camouflage')
+      goCamouflage: () => setScreen('camouflage'),
+      togglePanic: () => setPanicState((p) => !p),
+      setPanic: (on) => setPanicState(on)
     }),
-    [screen, bookId, skinId]
+    [screen, bookId, skinId, panic]
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

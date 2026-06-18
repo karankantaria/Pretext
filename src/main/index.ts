@@ -1,11 +1,12 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, globalShortcut } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerIpc } from './ipc'
 import { seedFromDir } from './library'
+import { IPC } from '../shared/types'
 
-function createWindow(): void {
+function createWindow(): BrowserWindow {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -38,6 +39,8 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  return mainWindow
 }
 
 // This method will be called when Electron has finished
@@ -62,13 +65,24 @@ app.whenReady().then(() => {
     seedFromDir(process.cwd())
   }
 
-  createWindow()
+  const mainWindow = createWindow()
+
+  // Global panic hotkey: works even when the app isn't focused. Fires the same
+  // in-window panic cover the renderer toggles on Escape.
+  globalShortcut.register('F9', () => {
+    const win = BrowserWindow.getAllWindows()[0] ?? mainWindow
+    win?.webContents.send(IPC.panicTrigger)
+  })
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+})
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

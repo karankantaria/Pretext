@@ -1,21 +1,79 @@
-// Screen 2 — Pick camouflage. A gallery of skins (the "wardrobe"). Available
-// skins are selectable; the rest preview as coming soon.
+// Screen 2 — Pick camouflage. The wardrobe, grouped by profession. A filter
+// chip bar narrows to one role; each group lists its skins. Empty categories
+// show a roadmap teaser.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { BookView } from '../../../shared/types'
 import { useApp } from '../store/appStore'
-import { SKINS } from '../skins'
+import { CATEGORIES, SKINS } from '../skins'
+import type { SkinDef } from '../skins/types'
+
+const TEASERS: Record<string, string> = {
+  creative: 'Vector editor (Illustrator/Figma), Photoshop & video timeline'
+}
+
+function SkinCard({
+  skin,
+  onPick
+}: {
+  skin: SkinDef
+  onPick: () => void
+}): React.JSX.Element {
+  return (
+    <motion.button
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      disabled={!skin.available}
+      onClick={() => skin.available && onPick()}
+      className={`group relative flex flex-col overflow-hidden rounded-xl border text-left transition-all ${
+        skin.available
+          ? 'cursor-pointer border-[#1b2230] bg-[#0d1117] hover:border-[var(--a)] hover:shadow-[0_0_30px_-10px_var(--a)]'
+          : 'cursor-not-allowed border-[#141a24] bg-[#0b0f15] opacity-50'
+      }`}
+      style={{ ['--a' as string]: skin.accent }}
+    >
+      <div
+        className="relative h-24 w-full overflow-hidden border-b border-[#1b2230]"
+        style={{ background: `linear-gradient(135deg, ${skin.accent}22, transparent 70%)` }}
+      >
+        <div className="absolute inset-0 p-3 font-mono text-[9px] leading-[13px] text-[#5c6370]">
+          {Array.from({ length: 6 }).map((_, r) => (
+            <div key={r} className="truncate" style={{ opacity: 1 - r * 0.12 }}>
+              <span style={{ color: skin.accent }}>{r % 2 ? '›' : '▸'}</span>{' '}
+              {'░▒▓█'.repeat(3)} {skin.id}_{r}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-1 flex-col gap-1 p-3">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full" style={{ background: skin.accent }} />
+          <span className="text-sm font-semibold text-[#c8ccd4]">{skin.name}</span>
+        </div>
+        <div className="text-xs text-[#7d8694]">{skin.tagline}</div>
+        <div className="mt-auto pt-2 text-[10px] text-[#3b4252]">{skin.disguise}</div>
+      </div>
+    </motion.button>
+  )
+}
 
 export default function Camouflage(): React.JSX.Element {
   const { bookId, startReading, goLibrary } = useApp()
   const [book, setBook] = useState<BookView | null>(null)
+  const [filter, setFilter] = useState<string>('all')
 
   useEffect(() => {
     window.api.library.list().then((list) => {
       setBook(list.find((b) => b.id === bookId) ?? null)
     })
   }, [bookId])
+
+  const visibleCats = useMemo(
+    () => CATEGORIES.filter((c) => filter === 'all' || c.id === filter),
+    [filter]
+  )
 
   return (
     <div className="flex h-full w-full flex-col bg-[#0a0e14] text-[#c8ccd4]">
@@ -30,58 +88,74 @@ export default function Camouflage(): React.JSX.Element {
           <span className="text-[#5c6370]">Disguise for </span>
           <span className="font-semibold text-[#c8ccd4]">{book?.title ?? '…'}</span>
         </div>
-        <div className="ml-auto text-xs text-[#3b4252]">Choose a camouflage</div>
+        <div className="ml-auto text-xs text-[#3b4252]">Choose a camouflage by role</div>
       </div>
 
-      <div className="grid flex-1 grid-cols-3 gap-4 overflow-y-auto p-6">
-        {SKINS.map((skin, i) => (
-          <motion.button
-            key={skin.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.04 }}
-            disabled={!skin.available}
-            onClick={() => skin.available && startReading(skin.id)}
-            className={`group relative flex flex-col overflow-hidden rounded-xl border text-left transition-all ${
-              skin.available
-                ? 'cursor-pointer border-[#1b2230] bg-[#0d1117] hover:border-[var(--a)] hover:shadow-[0_0_30px_-10px_var(--a)]'
-                : 'cursor-not-allowed border-[#141a24] bg-[#0b0f15] opacity-50'
-            }`}
-            style={{ ['--a' as string]: skin.accent }}
-          >
-            {/* Mini preview band */}
-            <div
-              className="relative h-28 w-full overflow-hidden border-b border-[#1b2230]"
-              style={{
-                background: `linear-gradient(135deg, ${skin.accent}22, transparent 70%)`
-              }}
-            >
-              <div className="absolute inset-0 p-3 font-mono text-[9px] leading-[13px] text-[#5c6370]">
-                {Array.from({ length: 7 }).map((_, r) => (
-                  <div key={r} className="truncate" style={{ opacity: 1 - r * 0.1 }}>
-                    <span style={{ color: skin.accent }}>{r % 2 ? '›' : '▸'}</span>{' '}
-                    {'░▒▓█'.repeat(3)} {skin.id}_{r}
-                  </div>
-                ))}
-              </div>
-              {!skin.available && (
-                <div className="absolute right-2 top-2 rounded bg-[#0a0e14]/80 px-2 py-0.5 text-[9px] uppercase tracking-wider text-[#5c6370]">
-                  soon
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-1 flex-col gap-1 p-3">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full" style={{ background: skin.accent }} />
-                <span className="text-sm font-semibold text-[#c8ccd4]">{skin.name}</span>
-              </div>
-              <div className="text-xs text-[#7d8694]">{skin.tagline}</div>
-              <div className="mt-auto pt-2 text-[10px] text-[#3b4252]">{skin.disguise}</div>
-            </div>
-          </motion.button>
+      {/* Role filter chips */}
+      <div className="flex flex-wrap gap-2 border-b border-[#10151d] px-6 py-3">
+        <Chip active={filter === 'all'} onClick={() => setFilter('all')} accent="#7d8694">
+          All roles
+        </Chip>
+        {CATEGORIES.map((c) => (
+          <Chip key={c.id} active={filter === c.id} onClick={() => setFilter(c.id)} accent={c.accent}>
+            {c.label}
+          </Chip>
         ))}
       </div>
+
+      {/* Grouped sections */}
+      <div className="flex-1 overflow-y-auto px-6 py-5">
+        {visibleCats.map((cat) => {
+          const skins = SKINS.filter((s) => s.category === cat.id)
+          return (
+            <section key={cat.id} className="mb-8">
+              <div className="mb-3 flex items-baseline gap-3">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: cat.accent }} />
+                <h2 className="text-sm font-semibold text-[#e6edf3]">{cat.label}</h2>
+                <span className="text-xs text-[#5c6370]">{cat.blurb}</span>
+                <span className="ml-auto text-xs text-[#3b4252]">{skins.length}</span>
+              </div>
+              {skins.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+                  {skins.map((skin) => (
+                    <SkinCard key={skin.id} skin={skin} onPick={() => startReading(skin.id)} />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-[#1b2230] px-5 py-6 text-xs text-[#3b4252]">
+                  Coming soon — {TEASERS[cat.id] ?? 'more disguises'}
+                </div>
+              )}
+            </section>
+          )
+        })}
+      </div>
     </div>
+  )
+}
+
+function Chip({
+  active,
+  onClick,
+  accent,
+  children
+}: {
+  active: boolean
+  onClick: () => void
+  accent: string
+  children: React.ReactNode
+}): React.JSX.Element {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+        active
+          ? 'border-[var(--a)] bg-[var(--a)]/10 text-[#e6edf3]'
+          : 'border-[#1b2230] text-[#7d8694] hover:border-[#2b3650] hover:text-[#c8ccd4]'
+      }`}
+      style={{ ['--a' as string]: accent }}
+    >
+      {children}
+    </button>
   )
 }

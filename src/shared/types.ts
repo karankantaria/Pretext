@@ -67,6 +67,8 @@ export interface PretextApi {
   progress: {
     save: (id: string, position: Omit<ReadingPosition, 'updatedAt'>) => Promise<void>
   }
+  /** Subscribe to the global panic hotkey (fires even when unfocused). Returns an unsubscribe fn. */
+  onPanic: (cb: () => void) => () => void
 }
 
 /** IPC channel names — single source of truth for main + preload. */
@@ -77,5 +79,6 @@ export const IPC = {
   libraryRemove: 'library:remove',
   librarySetShelf: 'library:setShelf',
   bookOpen: 'book:open',
-  progressSave: 'progress:save'
+  progressSave: 'progress:save',
+  panicTrigger: 'panic:trigger'
 } as const
