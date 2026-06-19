@@ -57,3 +57,6 @@ Drop any `.epub` in the project root and it's auto-imported in dev.
 `Backspace` / hover `←` — exit book · `Esc` or global `F9` — panic cover.
 
 Brand colour `#FF6C7F`. Icon/branding sources live in `icons/`.
+
+## License
+[MIT](LICENSE) © 2026 Karan Kantaria

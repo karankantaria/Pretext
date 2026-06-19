@@ -4,6 +4,7 @@
   "description": "Pretext — a covert EPUB reader disguised as flashy technical software, with a Spotify player woven in.",
   "main": "./out/main/index.js",
   "author": "karankantaria",
+  "license": "MIT",
   "homepage": "https://github.com/karankantaria/Pretext",
   "scripts": {
     "format": "prettier --write .",
