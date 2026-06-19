@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import type { BookView, Shelf } from '../../../shared/types'
 import { useApp } from '../store/appStore'
 import brandIcon from '../assets/brand-icon.png'
+import HelpModal from './HelpModal'
 
 const SHELVES: { key: Shelf; label: string; hint: string }[] = [
   { key: 'started', label: 'In Progress', hint: 'Pick up where you left off' },
@@ -89,6 +90,7 @@ export default function Library(): React.JSX.Element {
   const { pickBook } = useApp()
   const [books, setBooks] = useState<BookView[]>([])
   const [loading, setLoading] = useState(true)
+  const [showHelp, setShowHelp] = useState(false)
 
   const refresh = useCallback(async () => {
     const list = await window.api.library.list()
@@ -114,7 +116,7 @@ export default function Library(): React.JSX.Element {
   }, [])
 
   return (
-    <div className="flex h-full w-full flex-col bg-[#0a0e14] text-[#c8ccd4]">
+    <div className="relative flex h-full w-full flex-col bg-[#0a0e14] text-[#c8ccd4]">
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-[#1b2230] px-6 py-4">
         <img src={brandIcon} alt="" className="h-9 w-9 rounded-xl shadow-[0_0_20px_-6px_#ff6c7f]" />
@@ -166,6 +168,19 @@ export default function Library(): React.JSX.Element {
           )
         })}
       </div>
+
+      {/* How to use */}
+      <button
+        onClick={() => setShowHelp(true)}
+        className="absolute bottom-4 right-4 flex items-center gap-2 rounded-full border border-[#2b3650] bg-[#0d1117] px-4 py-2 text-xs font-medium text-[#a3acba] shadow-lg transition-colors hover:border-brand/60 hover:text-brand"
+      >
+        <span className="grid h-4 w-4 place-items-center rounded-full border border-current text-[10px]">
+          ?
+        </span>
+        How to use
+      </button>
+
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </div>
   )
 }

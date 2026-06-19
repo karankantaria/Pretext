@@ -1,0 +1,36 @@
+# Build the Windows installer and publish it to a GitHub Release whenever a
+# version tag (v*) is pushed. The release is created as a DRAFT — review the
+# attached installer, then hit Publish in the GitHub Releases UI.
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Allow the workflow's GITHUB_TOKEN to create/update releases.
+permissions:
+  contents: write
+
+jobs:
+  release-win:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build, package and publish the Windows installer
+        run: npm run release:win
+        env:
+          # Provided automatically by GitHub Actions — electron-builder reads it
+          # to upload the artifacts to the GitHub Release.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
