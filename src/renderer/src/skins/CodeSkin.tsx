@@ -6,8 +6,8 @@
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { SkinProps } from './types'
 
-const FONT_SIZE = 13
-const LINE_H = 21
+const FONT_SIZE_BASE = 13
+const LINE_H_BASE = 21
 const GUTTER_PX = 56
 const INDENT = 4 // spaces of docstring indent on each book line
 const FONT_STACK =
@@ -64,7 +64,9 @@ interface Row {
 }
 
 export default function CodeSkin(props: SkinProps): React.JSX.Element {
-  const { book, lines, chapterTitle, chapterIndex, progress, onGeometry } = props
+  const { book, lines, chapterTitle, chapterIndex, progress, fontScale, onGeometry } = props
+  const FONT_SIZE = Math.round(FONT_SIZE_BASE * fontScale)
+  const LINE_H = Math.round(LINE_H_BASE * fontScale)
   const areaRef = useRef<HTMLDivElement>(null)
   const probeRef = useRef<HTMLSpanElement>(null)
   const [dims, setDims] = useState({ columns: 80, bookRows: 24 })
@@ -132,7 +134,7 @@ export default function CodeSkin(props: SkinProps): React.JSX.Element {
     const ro = new ResizeObserver(measure)
     ro.observe(area)
     return () => ro.disconnect()
-  }, [header.length, footer.length, onGeometry])
+  }, [header.length, footer.length, onGeometry, LINE_H, FONT_SIZE])
 
   // Assemble the full screen of rows: header + book docstring + footer + filler.
   const rows = useMemo<Row[]>(() => {

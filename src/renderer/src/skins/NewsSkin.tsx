@@ -6,8 +6,8 @@ import { useEffect, useMemo, useRef } from 'react'
 import { MonoProbe, PROSE_SAMPLE, useSeries, useMonoMeasure, useTicker } from './common'
 import type { SkinProps } from './types'
 
-const FONT_SIZE = 16
-const LINE_H = 27
+const FONT_SIZE_BASE = 16
+const LINE_H_BASE = 27
 const SERIF = "Georgia, 'Times New Roman', 'Noto Serif', serif"
 
 const SECTIONS = ['World', 'Business', 'Technology', 'Politics', 'Science', 'Culture', 'Opinion', 'Sport']
@@ -34,7 +34,9 @@ const TICKERS = [
 ]
 
 export default function NewsSkin(props: SkinProps): React.JSX.Element {
-  const { lines, chapterTitle, chapterIndex, progress, onGeometry } = props
+  const { lines, chapterTitle, chapterIndex, progress, fontScale, onGeometry } = props
+  const FONT_SIZE = Math.round(FONT_SIZE_BASE * fontScale)
+  const LINE_H = Math.round(LINE_H_BASE * fontScale)
   const areaRef = useRef<HTMLDivElement>(null)
   const probeRef = useRef<HTMLSpanElement>(null)
   const { cols, rows } = useMonoMeasure(areaRef, probeRef, LINE_H)

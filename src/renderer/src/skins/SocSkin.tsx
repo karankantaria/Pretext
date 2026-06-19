@@ -15,8 +15,8 @@ import {
 } from './common'
 import type { SkinProps } from './types'
 
-const FONT_SIZE = 13
-const LINE_H = 22
+const FONT_SIZE_BASE = 13
+const LINE_H_BASE = 22
 const PREFIX_COLS = 21
 
 const SEV = [
@@ -50,7 +50,9 @@ function rngIp(seed: number): string {
 }
 
 export default function SocSkin(props: SkinProps): React.JSX.Element {
-  const { book, lines, chapterIndex, progress, onGeometry } = props
+  const { book, lines, chapterIndex, progress, fontScale, onGeometry } = props
+  const FONT_SIZE = Math.round(FONT_SIZE_BASE * fontScale)
+  const LINE_H = Math.round(LINE_H_BASE * fontScale)
   const areaRef = useRef<HTMLDivElement>(null)
   const probeRef = useRef<HTMLSpanElement>(null)
   const { cols, rows } = useMonoMeasure(areaRef, probeRef, LINE_H)

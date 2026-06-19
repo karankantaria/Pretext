@@ -7,8 +7,8 @@ import { useEffect, useMemo, useRef } from 'react'
 import { MonoProbe, PROSE_SAMPLE, useMonoMeasure } from './common'
 import type { SkinProps } from './types'
 
-const FONT_SIZE = 15
-const LINE_H = 26
+const FONT_SIZE_BASE = 15
+const LINE_H_BASE = 26
 const SANS = "'Segoe UI', Calibri, 'Helvetica Neue', Arial, sans-serif"
 
 const RIBBON_TABS = [
@@ -27,7 +27,9 @@ function RibbonBtn({ children, w = 'auto' }: { children: React.ReactNode; w?: st
 }
 
 export default function WordSkin(props: SkinProps): React.JSX.Element {
-  const { book, lines, chapterTitle, chapterIndex, progress, onGeometry } = props
+  const { book, lines, chapterTitle, chapterIndex, progress, fontScale, onGeometry } = props
+  const FONT_SIZE = Math.round(FONT_SIZE_BASE * fontScale)
+  const LINE_H = Math.round(LINE_H_BASE * fontScale)
   const areaRef = useRef<HTMLDivElement>(null)
   const probeRef = useRef<HTMLSpanElement>(null)
   const { cols, rows } = useMonoMeasure(areaRef, probeRef, LINE_H)

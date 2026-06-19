@@ -16,6 +16,8 @@ export interface SkinProps {
   totalPages: number
   /** Overall progress across the whole book, 0..1. */
   progress: number
+  /** Reading text-size multiplier; skins scale their font + line height by it. */
+  fontScale: number
   /** Call when the text-area geometry is measured or changes. */
   onGeometry: (geo: PageGeometry) => void
 }

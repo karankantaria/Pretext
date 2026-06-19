@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { BookView, Shelf } from '../../../shared/types'
 import { useApp } from '../store/appStore'
+import brandIcon from '../assets/brand-icon.png'
 
 const SHELVES: { key: Shelf; label: string; hint: string }[] = [
   { key: 'started', label: 'In Progress', hint: 'Pick up where you left off' },
@@ -46,7 +47,7 @@ function BookCard({
           <div className="truncate text-xs text-[#5c6370]">{book.author}</div>
           <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[#161b22]">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-sky-500"
+              className="h-full rounded-full bg-gradient-to-r from-brand to-brand-soft"
               style={{ width: `${Math.round(book.progress * 100)}%` }}
             />
           </div>
@@ -116,15 +117,17 @@ export default function Library(): React.JSX.Element {
     <div className="flex h-full w-full flex-col bg-[#0a0e14] text-[#c8ccd4]">
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-[#1b2230] px-6 py-4">
-        <div className="text-lg font-bold tracking-tight">
-          <span className="bg-gradient-to-r from-emerald-300 to-sky-400 bg-clip-text text-transparent">
-            Pretext
-          </span>
+        <img src={brandIcon} alt="" className="h-9 w-9 rounded-xl shadow-[0_0_20px_-6px_#ff6c7f]" />
+        <div className="leading-tight">
+          <div className="text-lg font-bold tracking-tight">
+            <span className="text-[#e6edf3]">Pre</span>
+            <span className="text-brand">text</span>
+          </div>
+          <div className="text-[10px] text-[#5c6370]">books in disguise · {books.length} in library</div>
         </div>
-        <div className="text-xs text-[#5c6370]">workspace · {books.length} modules</div>
         <button
           onClick={addBooks}
-          className="ml-auto rounded-md border border-[#2b3650] bg-[#0d1117] px-3 py-1.5 text-xs font-medium text-[#c8ccd4] transition-colors hover:border-emerald-500/60 hover:text-emerald-300"
+          className="ml-auto rounded-md border border-[#2b3650] bg-[#0d1117] px-3 py-1.5 text-xs font-medium text-[#c8ccd4] transition-colors hover:border-brand/60 hover:text-brand"
         >
           + Import
         </button>

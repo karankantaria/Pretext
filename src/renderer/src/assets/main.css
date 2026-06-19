@@ -3,6 +3,9 @@
 @theme {
   --font-mono:
     'JetBrains Mono', 'Cascadia Code', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  /* Pretext brand */
+  --color-brand: #ff6c7f;
+  --color-brand-soft: #ff97a3;
 }
 
 html,

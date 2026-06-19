@@ -7,8 +7,8 @@ import { useEffect, useMemo, useRef } from 'react'
 import { MonoProbe, PROSE_SAMPLE, useMonoMeasure } from './common'
 import type { SkinProps } from './types'
 
-const FONT_SIZE = 15
-const LINE_H = 25
+const FONT_SIZE_BASE = 15
+const LINE_H_BASE = 25
 const ARTBOARD = "'Helvetica Neue', Arial, sans-serif"
 
 const TOOLS = ['▶', '✒', 'T', '▭', '◯', '⌗', '✎', '⬚', '🖇', '🔍']
@@ -34,7 +34,9 @@ function Handle({ pos }: { pos: string }): React.JSX.Element {
 }
 
 export default function DesignSkin(props: SkinProps): React.JSX.Element {
-  const { book, lines, chapterTitle, chapterIndex, progress, onGeometry } = props
+  const { book, lines, chapterTitle, chapterIndex, progress, fontScale, onGeometry } = props
+  const FONT_SIZE = Math.round(FONT_SIZE_BASE * fontScale)
+  const LINE_H = Math.round(LINE_H_BASE * fontScale)
   const areaRef = useRef<HTMLDivElement>(null)
   const probeRef = useRef<HTMLSpanElement>(null)
   const { cols, rows } = useMonoMeasure(areaRef, probeRef, LINE_H)

@@ -11,6 +11,8 @@ interface AppState {
   skinId: string
   /** When true, the innocuous panic cover is shown over everything. */
   panic: boolean
+  /** Reading text-size multiplier (applied by skins to their font + line height). */
+  fontScale: number
   /** Library → Camouflage: a book was chosen. */
   pickBook: (id: string) => void
   /** Camouflage → Reader: a skin was chosen. */
@@ -21,7 +23,11 @@ interface AppState {
   goCamouflage: () => void
   togglePanic: () => void
   setPanic: (on: boolean) => void
+  setFontScale: (v: number) => void
 }
+
+const FONT_SCALE_MIN = 0.8
+const FONT_SCALE_MAX = 1.6
 
 const Ctx = createContext<AppState | null>(null)
 
@@ -30,6 +36,10 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
   const [bookId, setBookId] = useState<string | null>(null)
   const [skinId, setSkinId] = useState<string>('code')
   const [panic, setPanicState] = useState(false)
+  const [fontScale, setFontScaleState] = useState<number>(() => {
+    const v = Number(localStorage.getItem('pretext.fontScale'))
+    return v >= FONT_SCALE_MIN && v <= FONT_SCALE_MAX ? v : 1
+  })
 
   const value = useMemo<AppState>(
     () => ({
@@ -37,6 +47,7 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
       bookId,
       skinId,
       panic,
+      fontScale,
       pickBook: (id) => {
         setBookId(id)
         setScreen('camouflage')
@@ -48,9 +59,14 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
       goLibrary: () => setScreen('library'),
       goCamouflage: () => setScreen('camouflage'),
       togglePanic: () => setPanicState((p) => !p),
-      setPanic: (on) => setPanicState(on)
+      setPanic: (on) => setPanicState(on),
+      setFontScale: (v) => {
+        const c = Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, Math.round(v * 100) / 100))
+        setFontScaleState(c)
+        localStorage.setItem('pretext.fontScale', String(c))
+      }
     }),
-    [screen, bookId, skinId, panic]
+    [screen, bookId, skinId, panic, fontScale]
   )
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

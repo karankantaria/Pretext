@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden;
+    -webkit-user-select:none;user-select:none;cursor:default}
+  .wrap{height:100vh;display:flex;align-items:center;justify-content:center}
+  .card{width:340px;padding:44px 40px 32px;background:#fff;border-radius:22px;
+    display:flex;flex-direction:column;align-items:center;
+    box-shadow:0 18px 50px rgba(34,26,27,.18);
+    font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif}
+  .g{opacity:0;transform-box:fill-box;transform-origin:center}
+  #tile{animation:tile .5s cubic-bezier(.2,.8,.3,1.2) both}
+  #win{animation:fade .4s ease .36s both}
+  #dots{animation:pop .3s ease .72s both}
+  #spine{stroke-dasharray:80;stroke-dashoffset:80;opacity:0;animation:draw .42s ease .86s both}
+  .ln{stroke-dasharray:90;stroke-dashoffset:90;opacity:0;animation:draw .3s ease both}
+  .word{opacity:0;transform:translateY(10px);animation:rise .55s cubic-bezier(.2,.7,.3,1) 1.5s both;
+    font-size:40px;font-weight:600;letter-spacing:-1px;margin:18px 0 0}
+  .tag{opacity:0;transform:translateY(8px);animation:rise .5s ease 1.9s both;
+    font-size:14px;letter-spacing:.4px;color:#8C8284;margin:7px 0 0}
+  .load{display:flex;gap:7px;margin-top:24px}
+  .load i{width:7px;height:7px;border-radius:50%;background:#FF6C7F;opacity:0;
+    animation:appear .3s ease 2.35s both,pulse 1.2s ease 2.35s infinite}
+  .load i:nth-child(2){animation-delay:2.35s,2.5s}
+  .load i:nth-child(3){animation-delay:2.35s,2.65s}
+  @keyframes tile{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+  @keyframes fade{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+  @keyframes pop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+  @keyframes draw{from{opacity:1;stroke-dashoffset:90}to{opacity:1;stroke-dashoffset:0}}
+  @keyframes rise{to{opacity:1;transform:none}}
+  @keyframes appear{to{opacity:1}}
+  @keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+  @media (prefers-reduced-motion:reduce){.g,#spine,.ln,.word,.tag,.load i{animation-duration:.01ms!important;opacity:1!important;stroke-dashoffset:0!important;transform:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <svg width="104" height="104" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+      <g class="g" id="tile"><rect x="2" y="2" width="116" height="116" rx="28" fill="#FF6C7F"/></g>
+      <g class="g" id="win">
+        <rect x="24" y="30" width="72" height="62" rx="9" fill="#FFFFFF"/>
+        <line x1="24" y1="46" x2="96" y2="46" stroke="#FFD3D9" stroke-width="2"/>
+      </g>
+      <g class="g" id="dots">
+        <circle cx="34" cy="38" r="2.6" fill="#FF6C7F"/>
+        <circle cx="42" cy="38" r="2.6" fill="#FF6C7F"/>
+      </g>
+      <line class="ln" style="animation-delay:1.08s" x1="31" y1="58" x2="54" y2="58" stroke="#FFB9C2" stroke-width="2.6" stroke-linecap="round"/>
+      <line class="ln" style="animation-delay:1.18s" x1="66" y1="58" x2="89" y2="58" stroke="#FFB9C2" stroke-width="2.6" stroke-linecap="round"/>
+      <line class="ln" style="animation-delay:1.28s" x1="31" y1="67" x2="54" y2="67" stroke="#FFB9C2" stroke-width="2.6" stroke-linecap="round"/>
+      <line class="ln" style="animation-delay:1.38s" x1="66" y1="67" x2="89" y2="67" stroke="#FFB9C2" stroke-width="2.6" stroke-linecap="round"/>
+      <line class="ln" style="animation-delay:1.48s" x1="31" y1="76" x2="47" y2="76" stroke="#FFB9C2" stroke-width="2.6" stroke-linecap="round"/>
+      <line class="ln" style="animation-delay:1.58s" x1="66" y1="76" x2="82" y2="76" stroke="#FFB9C2" stroke-width="2.6" stroke-linecap="round"/>
+      <line id="spine" x1="60" y1="50" x2="60" y2="86" stroke="#FF6C7F" stroke-width="3.2" stroke-linecap="round"/>
+    </svg>
+    <p class="word"><span style="color:#221A1B">Pre</span><span style="color:#FF6C7F">text</span></p>
+    <p class="tag">books in disguise</p>
+    <div class="load"><i></i><i></i><i></i></div>
+  </div>
+</div>
+</body>
+</html>
