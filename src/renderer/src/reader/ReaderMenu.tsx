@@ -11,6 +11,7 @@ export default function ReaderMenu({
   fontScale,
   onJump,
   onSetFontScale,
+  onLookup,
   onClose
 }: {
   book: OpenedBook
@@ -19,6 +20,7 @@ export default function ReaderMenu({
   fontScale: number
   onJump: (i: number) => void
   onSetFontScale: (v: number) => void
+  onLookup: () => void
   onClose: () => void
 }): React.JSX.Element {
   return (
@@ -66,6 +68,17 @@ export default function ReaderMenu({
           </div>
         </div>
 
+        {/* Dictionary */}
+        <div className="flex items-center gap-3 border-b border-[#1b2230] px-4 py-3">
+          <span className="text-xs uppercase tracking-wider text-[#5c6370]">Dictionary</span>
+          <button
+            onClick={onLookup}
+            className="ml-auto rounded border border-[#2b3650] px-2.5 py-1 text-xs text-[#c8ccd4] hover:border-brand/60 hover:text-brand"
+          >
+            Look up a word (d)
+          </button>
+        </div>
+
         {/* Table of contents */}
         <div className="min-h-0 flex-1 overflow-y-auto py-1">
           {book.chapters.map((c, i) => {
@@ -107,7 +120,7 @@ export default function ReaderMenu({
         </div>
 
         <div className="border-t border-[#1b2230] px-4 py-2 text-[10px] text-[#3b4252]">
-          press c to toggle · backspace to exit · esc to hide
+          press c to toggle · d to look up · backspace to exit · esc to hide
         </div>
       </div>
     </div>

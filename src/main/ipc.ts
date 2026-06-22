@@ -5,6 +5,7 @@ import { ipcMain, dialog, BrowserWindow } from 'electron'
 import { IPC } from '../shared/types'
 import type { OpenedBook, ReadingPosition, Shelf } from '../shared/types'
 import { parseEpubChapters, parseEpubMeta } from './epub'
+import { lookupWord } from './dictionary'
 import {
   addBookByPath,
   getBook,
@@ -52,6 +53,9 @@ export function registerIpc(): void {
 
   ipcMain.handle(
     IPC.progressSave,
-    (_e, id: string, position: Omit<ReadingPosition, 'updatedAt'>) => saveProgress(id, position)
+    (_e, id: string, position: Omit<ReadingPosition, 'updatedAt'>, atEnd: boolean) =>
+      saveProgress(id, position, atEnd)
   )
+
+  ipcMain.handle(IPC.dictLookup, (_e, word: string) => lookupWord(word))
 }

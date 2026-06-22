@@ -49,6 +49,20 @@ export interface OpenedBook {
   position: ReadingPosition | null
 }
 
+/** One sense from a dictionary lookup. */
+export interface DictSense {
+  partOfSpeech: string
+  definition: string
+  example?: string
+}
+
+/** A normalized dictionary entry (subset of dictionaryapi.dev's response). */
+export interface DictEntry {
+  word: string
+  phonetic?: string
+  senses: DictSense[]
+}
+
 /** The API surface exposed on `window.api` via the preload bridge. */
 export interface PretextApi {
   library: {
@@ -65,7 +79,16 @@ export interface PretextApi {
     open: (id: string) => Promise<OpenedBook>
   }
   progress: {
-    save: (id: string, position: Omit<ReadingPosition, 'updatedAt'>) => Promise<void>
+    /** Save the current spot. `atEnd` marks the book finished (end of the last chapter). */
+    save: (
+      id: string,
+      position: Omit<ReadingPosition, 'updatedAt'>,
+      atEnd: boolean
+    ) => Promise<void>
+  }
+  dictionary: {
+    /** Look up a word; resolves null when there's no definition. */
+    lookup: (word: string) => Promise<DictEntry | null>
   }
   /** Subscribe to the global panic hotkey (fires even when unfocused). Returns an unsubscribe fn. */
   onPanic: (cb: () => void) => () => void
@@ -80,5 +103,6 @@ export const IPC = {
   librarySetShelf: 'library:setShelf',
   bookOpen: 'book:open',
   progressSave: 'progress:save',
+  dictLookup: 'dict:lookup',
   panicTrigger: 'panic:trigger'
 } as const

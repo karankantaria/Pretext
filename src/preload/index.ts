@@ -16,7 +16,10 @@ const api: PretextApi = {
     open: (id) => ipcRenderer.invoke(IPC.bookOpen, id)
   },
   progress: {
-    save: (id, position) => ipcRenderer.invoke(IPC.progressSave, id, position)
+    save: (id, position, atEnd) => ipcRenderer.invoke(IPC.progressSave, id, position, atEnd)
+  },
+  dictionary: {
+    lookup: (word) => ipcRenderer.invoke(IPC.dictLookup, word)
   },
   onPanic: (cb) => {
     const handler = (): void => cb()

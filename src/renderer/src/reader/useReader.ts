@@ -13,6 +13,8 @@ import {
 
 export interface ReaderApi {
   loading: boolean
+  /** Set when the book failed to open/parse; the reader shows this instead of hanging. */
+  error: string | null
   book: OpenedBook | null
   chapterIndex: number
   pageIndex: number
@@ -35,6 +37,7 @@ const SAVE_DEBOUNCE_MS = 700
 export function useReader(bookId: string): ReaderApi {
   const [book, setBook] = useState<OpenedBook | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [chapterIndex, setChapterIndex] = useState(0)
   const [pageIndex, setPageIndex] = useState(0)
   const [geo, setGeo] = useState<PageGeometry | null>(null)
@@ -51,16 +54,26 @@ export function useReader(bookId: string): ReaderApi {
   useEffect(() => {
     let alive = true
     setLoading(true)
+    setError(null)
     ready.current = false
-    window.api.book.open(bookId).then((b) => {
-      if (!alive) return
-      setBook(b)
-      const pos = b.position
-      const ci = pos ? Math.min(Math.max(0, pos.chapterIndex), Math.max(0, b.chapters.length - 1)) : 0
-      targetFraction.current = pos ? pos.chapterFraction : 0
-      setChapterIndex(ci)
-      setLoading(false)
-    })
+    window.api.book
+      .open(bookId)
+      .then((b) => {
+        if (!alive) return
+        setBook(b)
+        const pos = b.position
+        const ci = pos
+          ? Math.min(Math.max(0, pos.chapterIndex), Math.max(0, b.chapters.length - 1))
+          : 0
+        targetFraction.current = pos ? pos.chapterFraction : 0
+        setChapterIndex(ci)
+        setLoading(false)
+      })
+      .catch((e: unknown) => {
+        if (!alive) return
+        setError(e instanceof Error ? e.message : 'Could not open this book.')
+        setLoading(false)
+      })
     return () => {
       alive = false
     }
@@ -127,41 +140,52 @@ export function useReader(bookId: string): ReaderApi {
   )
 
   const chapterFraction = fractionForPage(pageIndex, totalPages)
-  const progress = chapterCount > 0 ? (chapterIndex + chapterFraction) / chapterCount : 0
+  // Report 100% at the end of the book even when the last chapter is a single
+  // page (fractionForPage can't express "end" with one page).
+  const progress = atEnd ? 1 : chapterCount > 0 ? (chapterIndex + chapterFraction) / chapterCount : 0
 
   // Debounced autosave of the current position, plus a flush on unmount.
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const latest = useRef({ chapterIndex, chapterFraction })
-  latest.current = { chapterIndex, chapterFraction }
+  const latest = useRef({ chapterIndex, chapterFraction, atEnd })
+  latest.current = { chapterIndex, chapterFraction, atEnd }
 
   useEffect(() => {
     if (!book || !geo || !ready.current) return
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
-      window.api.progress.save(bookId, {
-        chapterIndex: latest.current.chapterIndex,
-        chapterFraction: latest.current.chapterFraction
-      })
+      window.api.progress.save(
+        bookId,
+        {
+          chapterIndex: latest.current.chapterIndex,
+          chapterFraction: latest.current.chapterFraction
+        },
+        latest.current.atEnd
+      )
     }, SAVE_DEBOUNCE_MS)
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current)
     }
-  }, [bookId, book, geo, chapterIndex, chapterFraction])
+  }, [bookId, book, geo, chapterIndex, chapterFraction, atEnd])
 
   useEffect(() => {
     return () => {
       // Final flush so the exact spot survives leaving the reader — but only if
       // we actually got far enough to have a real position to save.
       if (!ready.current) return
-      window.api.progress.save(bookId, {
-        chapterIndex: latest.current.chapterIndex,
-        chapterFraction: latest.current.chapterFraction
-      })
+      window.api.progress.save(
+        bookId,
+        {
+          chapterIndex: latest.current.chapterIndex,
+          chapterFraction: latest.current.chapterFraction
+        },
+        latest.current.atEnd
+      )
     }
   }, [bookId])
 
   return {
     loading,
+    error,
     book,
     chapterIndex,
     pageIndex,

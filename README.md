@@ -54,7 +54,8 @@ Drop any `.epub` in the project root and it's auto-imported in dev.
 
 ## Reader controls
 `←/→` or click — turn pages · `c` — contents & text size · `−/=` — text size ·
-`Backspace` / hover `←` — exit book · `Esc` or global `F9` — panic cover.
+`d` — dictionary lookup · `Backspace` / hover `←` — exit book · `Esc` or global
+`F9` — panic cover.
 
 Brand colour `#FF6C7F`. Icon/branding sources live in `icons/`.
 

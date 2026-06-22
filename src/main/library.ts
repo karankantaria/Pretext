@@ -9,9 +9,6 @@ import { app } from 'electron'
 import type { BookView, ReadingPosition, Shelf } from '../shared/types'
 import { parseEpubMeta } from './epub'
 
-/** When the last chapter is read past this fraction, auto-mark the book finished. */
-const FINISH_THRESHOLD = 0.985
-
 interface BookRecord {
   id: string
   filePath: string
@@ -181,21 +178,18 @@ export async function seedFromDir(dir: string): Promise<void> {
 
 export async function saveProgress(
   id: string,
-  position: Omit<ReadingPosition, 'updatedAt'>
+  position: Omit<ReadingPosition, 'updatedAt'>,
+  atEnd: boolean
 ): Promise<void> {
   const lib = await load()
   const book = lib.books.find((b) => b.id === id)
   if (!book) return
   book.position = { ...position, updatedAt: Date.now() }
   book.lastReadAt = Date.now()
-  // Auto-finish when the reader reaches the end of the last chapter.
-  if (
-    !book.shelfPin &&
-    book.chapterCount > 0 &&
-    position.chapterIndex >= book.chapterCount - 1 &&
-    position.chapterFraction >= FINISH_THRESHOLD
-  ) {
-    book.finished = true
-  }
+  // Auto-finish when the reader reports it reached the end of the book. We trust
+  // the reader's own end-of-book signal rather than reconstructing it from a
+  // fraction threshold + spine length (which breaks for single-page final
+  // chapters and when empty spine documents were skipped during parsing).
+  if (!book.shelfPin && atEnd) book.finished = true
   await persist()
 }

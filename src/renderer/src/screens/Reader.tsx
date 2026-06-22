@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { useApp } from '../store/appStore'
 import { useReader } from '../reader/useReader'
 import ReaderMenu from '../reader/ReaderMenu'
+import DictionaryModal from '../reader/DictionaryModal'
 import { getSkin } from '../skins'
 
 export default function Reader(): React.JSX.Element {
@@ -13,10 +14,19 @@ export default function Reader(): React.JSX.Element {
   const reader = useReader(bookId ?? '')
   const skin = getSkin(skinId)
   const [menuOpen, setMenuOpen] = useState(false)
+  // null = closed; a string seeds the lookup field (with any selected word).
+  const [dictWord, setDictWord] = useState<string | null>(null)
+
+  const openDict = (): void => {
+    const sel = (window.getSelection()?.toString() ?? '').trim().split(/\s+/)[0] ?? ''
+    setMenuOpen(false)
+    setDictWord(sel)
+  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (panic) return // nothing should fire under the panic cover
+      if (dictWord !== null) return // the dictionary modal owns the keyboard
       if (e.key === 'c' || e.key === 'C') {
         e.preventDefault()
         setMenuOpen((o) => !o)
@@ -28,6 +38,9 @@ export default function Reader(): React.JSX.Element {
         setFontScale(fontScale + 0.1)
       } else if (menuOpen) {
         return // while the menu is open, don't turn pages
+      } else if (e.key === 'd' || e.key === 'D') {
+        e.preventDefault()
+        openDict()
       } else if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
         e.preventDefault()
         reader.next()
@@ -41,10 +54,25 @@ export default function Reader(): React.JSX.Element {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [reader, goLibrary, panic, menuOpen, fontScale, setFontScale])
+  }, [reader, goLibrary, panic, menuOpen, dictWord, fontScale, setFontScale])
 
   if (!bookId) {
     return <div className="flex h-full items-center justify-center text-[#5c6370]">No book</div>
+  }
+
+  if (reader.error) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-[#0a0e14] px-6 text-center">
+        <div className="text-sm text-[#e06c75]">This book couldn’t be opened.</div>
+        <div className="max-w-md text-xs text-[#5c6370]">{reader.error}</div>
+        <button
+          onClick={goLibrary}
+          className="rounded-md border border-[#2b3650] bg-[#0d1117] px-4 py-1.5 text-xs font-medium text-[#c8ccd4] transition-colors hover:border-brand/60 hover:text-brand"
+        >
+          ← Back to library
+        </button>
+      </div>
+    )
   }
 
   if (reader.loading || !reader.book) {
@@ -116,8 +144,13 @@ export default function Reader(): React.JSX.Element {
           fontScale={fontScale}
           onJump={reader.jumpChapter}
           onSetFontScale={setFontScale}
+          onLookup={openDict}
           onClose={() => setMenuOpen(false)}
         />
+      )}
+
+      {dictWord !== null && (
+        <DictionaryModal initialWord={dictWord} onClose={() => setDictWord(null)} />
       )}
     </div>
   )

@@ -87,6 +87,7 @@ export default function HelpModal({ onClose }: { onClose: () => void }): React.J
               desc="Turn pages"
             />
             <Row keys={<Key>C</Key>} desc="Open contents (jump chapters) & text size" />
+            <Row keys={<Key>D</Key>} desc="Look up a word in the dictionary" />
             <Row
               keys={
                 <>
