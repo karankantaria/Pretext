@@ -2,7 +2,7 @@
 // from the reader engine. Keyboard + click navigation, a discreet exit, and a
 // hover/keyboard reader menu (table of contents + text size).
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../store/appStore'
 import { useReader } from '../reader/useReader'
 import ReaderMenu from '../reader/ReaderMenu'
@@ -21,6 +21,50 @@ export default function Reader(): React.JSX.Element {
     const sel = (window.getSelection()?.toString() ?? '').trim().split(/\s+/)[0] ?? ''
     setMenuOpen(false)
     setDictWord(sel)
+  }
+
+  // Click-to-turn is debounced so a double-click (word lookup) doesn't also
+  // flip the page out from under the word being selected.
+  const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (clickTimer.current) clearTimeout(clickTimer.current)
+    },
+    []
+  )
+
+  const cancelPendingTurn = (): void => {
+    if (clickTimer.current) {
+      clearTimeout(clickTimer.current)
+      clickTimer.current = null
+    }
+  }
+
+  const onReadClick = (e: React.MouseEvent<HTMLDivElement>): void => {
+    if (panic || menuOpen || dictWord !== null) return
+    if (e.detail > 1) {
+      cancelPendingTurn() // second click of a double-click — don't turn the page
+      return
+    }
+    const sel = window.getSelection()
+    if (sel && !sel.isCollapsed && sel.toString().trim()) return // user is selecting text
+    const rect = e.currentTarget.getBoundingClientRect()
+    const goPrev = e.clientX - rect.left < rect.width / 3
+    if (clickTimer.current) clearTimeout(clickTimer.current)
+    clickTimer.current = setTimeout(() => {
+      clickTimer.current = null
+      if (goPrev) reader.prev()
+      else reader.next()
+    }, 200)
+  }
+
+  const onReadDoubleClick = (): void => {
+    cancelPendingTurn()
+    const word = (window.getSelection()?.toString() ?? '').trim().split(/\s+/)[0] ?? ''
+    if (word) {
+      setMenuOpen(false)
+      setDictWord(word)
+    }
   }
 
   useEffect(() => {
@@ -95,7 +139,9 @@ export default function Reader(): React.JSX.Element {
   const chapterTitle = reader.book.chapters[reader.chapterIndex]?.title ?? ''
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full" onClick={onReadClick} onDoubleClick={onReadDoubleClick}>
+      {/* Click the left third to go back, the rest to advance; book text stays
+          selectable, and double-clicking a word looks it up. */}
       <Skin
         book={reader.book}
         lines={reader.lines}
@@ -107,10 +153,6 @@ export default function Reader(): React.JSX.Element {
         fontScale={fontScale}
         onGeometry={reader.setGeometry}
       />
-
-      {/* Invisible click zones: left third = prev, right two-thirds = next. */}
-      <div className="absolute inset-y-0 left-0 w-1/3 cursor-default" onClick={reader.prev} />
-      <div className="absolute inset-y-0 right-0 w-2/3 cursor-default" onClick={reader.next} />
 
       {/* Discreet exit: a faint back button revealed only on hover (top-left). */}
       <button

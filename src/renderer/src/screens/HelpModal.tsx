@@ -57,7 +57,8 @@ export default function HelpModal({ onClose }: { onClose: () => void }): React.J
             <ol className="space-y-1.5 text-[13px] text-[#a3acba]">
               <li>
                 <span className="text-[#e6edf3]">1.</span> Hit{' '}
-                <span className="text-[#c8ccd4]">+ Import</span> to add your <code>.epub</code> books.
+                <span className="text-[#c8ccd4]">+ Import</span> to add your <code>.epub</code>{' '}
+                books.
               </li>
               <li>
                 <span className="text-[#e6edf3]">2.</span> Pick a book, then choose a{' '}
@@ -87,7 +88,15 @@ export default function HelpModal({ onClose }: { onClose: () => void }): React.J
               desc="Turn pages"
             />
             <Row keys={<Key>C</Key>} desc="Open contents (jump chapters) & text size" />
-            <Row keys={<Key>D</Key>} desc="Look up a word in the dictionary" />
+            <Row
+              keys={
+                <>
+                  <Key>D</Key>
+                  <span className="text-[11px] text-[#5c6370]">or double-click</span>
+                </>
+              }
+              desc="Look up a word (select it, or double-click it)"
+            />
             <Row
               keys={
                 <>

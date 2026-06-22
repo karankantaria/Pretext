@@ -1,6 +1,10 @@
-// Library + progress store. Persists a single JSON file in Electron's userData
-// dir: the list of imported books, each with its reading position and optional
-// manual shelf pin. Shelf is auto-derived from progress unless pinned.
+// Library + progress store. Persists two JSON files in Electron's userData dir:
+//   library.json — the book records (metadata + reading position + shelf pin).
+//   covers.json  — id → base64 cover data URL, kept SEPARATE so the frequent
+//                  progress autosaves only rewrite the small library file, not
+//                  megabytes of embedded cover images on every page turn.
+// Book ids are a hash of the file's *content*, so moving or renaming an .epub
+// keeps its progress. Shelf is auto-derived from progress unless pinned.
 
 import { createHash } from 'crypto'
 import { readFile, writeFile, mkdir, readdir } from 'fs/promises'
@@ -9,12 +13,13 @@ import { app } from 'electron'
 import type { BookView, ReadingPosition, Shelf } from '../shared/types'
 import { parseEpubMeta } from './epub'
 
+const STORE_VERSION = 2
+
 interface BookRecord {
   id: string
   filePath: string
   title: string
   author: string
-  coverDataUrl?: string
   chapterCount: number
   addedAt: number
   lastReadAt?: number
@@ -25,30 +30,94 @@ interface BookRecord {
 }
 
 interface LibraryFile {
-  version: 1
+  version: number
   books: BookRecord[]
 }
 
+/** id → base64 cover data URL. */
+type CoverMap = Record<string, string>
+
 let cache: LibraryFile | null = null
+let covers: CoverMap | null = null
 
 function storePath(): string {
   return join(app.getPath('userData'), 'library.json')
 }
 
-function idFor(filePath: string): string {
-  return createHash('sha1').update(filePath.toLowerCase()).digest('hex').slice(0, 16)
+function coversPath(): string {
+  return join(app.getPath('userData'), 'covers.json')
+}
+
+/** Content hash so a book keeps its identity (and progress) across moves/renames. */
+async function idFor(filePath: string): Promise<string> {
+  const buf = await readFile(filePath)
+  return createHash('sha1').update(buf).digest('hex').slice(0, 16)
+}
+
+async function loadCovers(): Promise<CoverMap> {
+  if (covers) return covers
+  try {
+    covers = JSON.parse(await readFile(coversPath(), 'utf-8')) as CoverMap
+  } catch {
+    covers = {}
+  }
+  return covers
 }
 
 async function load(): Promise<LibraryFile> {
   if (cache) return cache
+  await loadCovers()
   try {
     const raw = await readFile(storePath(), 'utf-8')
-    const parsed = JSON.parse(raw) as LibraryFile
-    cache = { version: 1, books: parsed.books ?? [] }
+    // Older stores embedded the cover on each record; tolerate that shape.
+    const parsed = JSON.parse(raw) as {
+      version?: number
+      books?: (BookRecord & { coverDataUrl?: string })[]
+    }
+    const books = parsed.books ?? []
+    cache = { version: parsed.version ?? 1, books }
+    if (cache.version < STORE_VERSION) await migrate(books)
   } catch {
-    cache = { version: 1, books: [] }
+    cache = { version: STORE_VERSION, books: [] }
   }
   return cache
+}
+
+/**
+ * One-time upgrade of a pre-v2 store: pull any inline covers out into the
+ * separate cover map, and re-key records from the old path-based id to a
+ * content hash so existing progress survives the switch.
+ */
+async function migrate(books: (BookRecord & { coverDataUrl?: string })[]): Promise<void> {
+  const map = await loadCovers()
+  const seen = new Set<string>()
+  const out: BookRecord[] = []
+
+  for (const b of books) {
+    const inlineCover = b.coverDataUrl
+    delete b.coverDataUrl
+
+    let id = b.id
+    try {
+      id = await idFor(b.filePath) // re-key by content where the file is reachable
+    } catch {
+      // File missing/unreadable — keep the old id.
+    }
+    if (inlineCover) map[id] = inlineCover
+    else if (id !== b.id && map[b.id]) {
+      map[id] = map[b.id]
+      delete map[b.id]
+    }
+    b.id = id
+
+    if (seen.has(id)) continue // drop duplicates (same content at two paths)
+    seen.add(id)
+    out.push(b)
+  }
+
+  cache = { version: STORE_VERSION, books: out }
+  await persist()
+  await persistCovers()
 }
 
 async function persist(): Promise<void> {
@@ -56,6 +125,13 @@ async function persist(): Promise<void> {
   const path = storePath()
   await mkdir(dirname(path), { recursive: true })
   await writeFile(path, JSON.stringify(cache, null, 2), 'utf-8')
+}
+
+async function persistCovers(): Promise<void> {
+  if (!covers) return
+  const path = coversPath()
+  await mkdir(dirname(path), { recursive: true })
+  await writeFile(path, JSON.stringify(covers), 'utf-8')
 }
 
 function overallProgress(b: BookRecord): number {
@@ -78,7 +154,7 @@ function toView(b: BookRecord): BookView {
     filePath: b.filePath,
     title: b.title,
     author: b.author,
-    coverDataUrl: b.coverDataUrl,
+    coverDataUrl: covers?.[b.id],
     chapterCount: b.chapterCount,
     addedAt: b.addedAt,
     lastReadAt: b.lastReadAt,
@@ -105,21 +181,26 @@ export async function listBooks(): Promise<BookView[]> {
 /** Import an EPUB by absolute path. Idempotent: re-adding updates metadata. */
 export async function addBookByPath(filePath: string): Promise<BookView[]> {
   const lib = await load()
-  const id = idFor(filePath)
+  const map = await loadCovers()
+  const id = await idFor(filePath)
   const meta = await parseEpubMeta(filePath)
+
+  if (meta.coverDataUrl) map[id] = meta.coverDataUrl
+  else delete map[id]
+
   const existing = lib.books.find((b) => b.id === id)
   if (existing) {
+    // Same content — refresh metadata and follow the file to its new location.
     existing.title = meta.title
     existing.author = meta.author
-    existing.coverDataUrl = meta.coverDataUrl
     existing.chapterCount = meta.chapterCount
+    existing.filePath = filePath
   } else {
     lib.books.push({
       id,
       filePath,
       title: meta.title,
       author: meta.author,
-      coverDataUrl: meta.coverDataUrl,
       chapterCount: meta.chapterCount,
       addedAt: Date.now(),
       position: null,
@@ -127,13 +208,17 @@ export async function addBookByPath(filePath: string): Promise<BookView[]> {
       finished: false
     })
   }
+  await persistCovers()
   await persist()
   return sortViews(lib.books.map(toView))
 }
 
 export async function removeBook(id: string): Promise<BookView[]> {
   const lib = await load()
+  const map = await loadCovers()
   lib.books = lib.books.filter((b) => b.id !== id)
+  delete map[id]
+  await persistCovers()
   await persist()
   return sortViews(lib.books.map(toView))
 }
@@ -168,8 +253,12 @@ export async function seedFromDir(dir: string): Promise<void> {
     for (const name of entries) {
       if (!name.toLowerCase().endsWith('.epub')) continue
       const filePath = join(dir, name)
-      if (known.has(idFor(filePath))) continue
-      await addBookByPath(filePath)
+      try {
+        if (known.has(await idFor(filePath))) continue
+        await addBookByPath(filePath)
+      } catch {
+        // Skip files that can't be hashed/parsed.
+      }
     }
   } catch {
     // No seed dir / unreadable — fine, the library just starts empty.
