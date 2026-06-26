@@ -1,6 +1,8 @@
-# Build the Windows installer and publish it to a GitHub Release whenever a
-# version tag (v*) is pushed. The release is created as a DRAFT — review the
-# attached installer, then hit Publish in the GitHub Releases UI.
+# Build the installers for Windows, macOS and Linux and publish them to a
+# GitHub Release whenever a version tag (v*) is pushed. Each OS is packaged on
+# its native runner — macOS dmgs and Linux AppImage/deb can only be produced on
+# their own platforms. The release is created as a DRAFT — review the attached
+# artifacts, then hit Publish in the GitHub Releases UI.
 name: release
 
 on:
@@ -13,8 +15,20 @@ permissions:
   contents: write
 
 jobs:
-  release-win:
-    runs-on: windows-latest
+  release:
+    strategy:
+      # Don't cancel the other OS builds if one fails — a green Windows build is
+      # still worth publishing even if, say, Linux hiccups.
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            script: release:win
+          - os: macos-latest
+            script: release:mac
+          - os: ubuntu-latest
+            script: release:linux
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -28,9 +42,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build, package and publish the Windows installer
-        run: npm run release:win
+      - name: Build, package and publish
+        run: npm run ${{ matrix.script }}
         env:
           # Provided automatically by GitHub Actions — electron-builder reads it
           # to upload the artifacts to the GitHub Release.
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The app is shipped unsigned/un-notarized. Stop electron-builder from
+          # searching for (absent) Apple signing certificates on the mac runner,
+          # which would otherwise fail the build.
+          CSC_IDENTITY_AUTO_DISCOVERY: false

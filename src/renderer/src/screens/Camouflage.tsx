@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import type { BookView } from '../../../shared/types'
 import { useApp } from '../store/appStore'
 import { CATEGORIES, SKINS } from '../skins'
+import SkinThumbnail from '../skins/SkinThumbnail'
 import type { SkinDef } from '../skins/types'
 
 const TEASERS: Record<string, string> = {
@@ -15,9 +16,11 @@ const TEASERS: Record<string, string> = {
 
 function SkinCard({
   skin,
+  book,
   onPick
 }: {
   skin: SkinDef
+  book: BookView | null
   onPick: () => void
 }): React.JSX.Element {
   return (
@@ -35,17 +38,28 @@ function SkinCard({
       style={{ ['--a' as string]: skin.accent }}
     >
       <div
-        className="relative h-24 w-full overflow-hidden border-b border-[#1b2230]"
+        className="relative aspect-[16/10] w-full overflow-hidden border-b border-[#1b2230]"
         style={{ background: `linear-gradient(135deg, ${skin.accent}22, transparent 70%)` }}
       >
-        <div className="absolute inset-0 p-3 font-mono text-[9px] leading-[13px] text-[#5c6370]">
-          {Array.from({ length: 6 }).map((_, r) => (
-            <div key={r} className="truncate" style={{ opacity: 1 - r * 0.12 }}>
-              <span style={{ color: skin.accent }}>{r % 2 ? '›' : '▸'}</span>{' '}
-              {'░▒▓█'.repeat(3)} {skin.id}_{r}
-            </div>
-          ))}
-        </div>
+        {skin.Component ? (
+          <SkinThumbnail
+            skin={skin}
+            title={book?.title ?? 'Selected Book'}
+            author={book?.author ?? 'Unknown author'}
+            chapterCount={book?.chapterCount ?? 12}
+          />
+        ) : (
+          <div className="absolute inset-0 p-3 font-mono text-[9px] leading-[13px] text-[#5c6370]">
+            {Array.from({ length: 6 }).map((_, r) => (
+              <div key={r} className="truncate" style={{ opacity: 1 - r * 0.12 }}>
+                <span style={{ color: skin.accent }}>{r % 2 ? '›' : '▸'}</span> {'░▒▓█'.repeat(3)}{' '}
+                {skin.id}_{r}
+              </div>
+            ))}
+          </div>
+        )}
+        {/* Keep the hover glow readable over the busy preview. */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0d1117]/40 to-transparent" />
       </div>
       <div className="flex flex-1 flex-col gap-1 p-3">
         <div className="flex items-center gap-2">
@@ -97,7 +111,12 @@ export default function Camouflage(): React.JSX.Element {
           All roles
         </Chip>
         {CATEGORIES.map((c) => (
-          <Chip key={c.id} active={filter === c.id} onClick={() => setFilter(c.id)} accent={c.accent}>
+          <Chip
+            key={c.id}
+            active={filter === c.id}
+            onClick={() => setFilter(c.id)}
+            accent={c.accent}
+          >
             {c.label}
           </Chip>
         ))}
@@ -118,7 +137,12 @@ export default function Camouflage(): React.JSX.Element {
               {skins.length > 0 ? (
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
                   {skins.map((skin) => (
-                    <SkinCard key={skin.id} skin={skin} onPick={() => startReading(skin.id)} />
+                    <SkinCard
+                      key={skin.id}
+                      skin={skin}
+                      book={book}
+                      onPick={() => startReading(skin.id)}
+                    />
                   ))}
                 </div>
               ) : (
